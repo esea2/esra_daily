@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonsuz Aşk Günlüğü</title>
+    
+    <link rel="icon" type="image/png" href="resima/esra.png">
+    
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">💌 2025 EsAl Günlüğü 💌</h1>
+        
+        <div class="counter-box">
+            <p>Sevgili Olduğumuz Tam Tamına:</p>
+            <div id="gunSayisi" class="days-count"></div> 
+            <p>Gündür!</p>
+        </div>
+
+        <div class="login-area">
+           
+            
+            <div class="user-login">
+                <h3>💖 Sevgili 1 (esra)</h3>
+                <input type="text" id="user1Name" placeholder="Kullanıcı Adı">
+                <input type="password" id="user1Pass" placeholder="Şifre">
+                <button onclick="loginUser(1)">Giriş</button>
+            </div>
+
+            <div class="user-login">
+                <h3>👑 Sevgili 2 (ali)</h3>
+                <input type="text" id="user2Name" placeholder="Kullanıcı Adı">
+                <input type="password" id="user2Pass" placeholder="Şifre">
+                <button onclick="loginUser(2)">Giriş</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="memoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modalDate"></h3>
+            
+            <textarea id="memoryText" placeholder="Bugünün anısını buraya yaz..."></textarea>
+            
+            <label for="memoryPhoto" class="photo-label">
+                📸 Fotoğraf Ekle (Yükleme simülasyonu)
+                <input type="file" id="memoryPhoto" accept="image/*">
+            </label>
+            
+            <button onclick="saveMemory()">Anıyı Kaydet</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script> 
+</body>
+</html>
