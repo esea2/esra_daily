@@ -1,5 +1,28 @@
+// ===================================================================
+// 1. FIREBASE ALTYAPISI (LÜTFEN BU BÖLÜMÜ GERÇEK ANAHTARLARINIZLA DOLDURUN)
+// ===================================================================
+
+const firebaseConfig = {
+  // BURAYA FIREBASE KONSOLUNDAN ALDIĞINIZ GERÇEK KOD BLOĞUNU YAPIŞTIRIN!
+  // Örn: apiKey: "AIzaSy_SİZİN_GERÇEK_ANAHTARINIZ_BURADA",
+  apiKey: "YOUR_API_KEY", 
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com", 
+  projectId: "YOUR_PROJECT_ID", 
+  storageBucket: "YOUR_PROJECT_ID.appspot.com", 
+  messagingSenderId: "1234567890", 
+  appId: "1:1234567890:web:abcdefg123456789" 
+};
+
+// Bu kısımlar Firebase'e bağlanır.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const ANILAR_KOLEKSIYON = "ortak_anilar";
+
 // -------------------------------------------------------------------
-// 1. Aşk Gün Sayacı Referansı: 16 Haziran 2021
+// 2. Aşk Gün Sayacı ve Giriş Mantığı
 // -------------------------------------------------------------------
 const baslangicTarihi = new Date(2021, 5, 16); 
 const bugununTarihi = new Date();
@@ -13,26 +36,20 @@ function gunSayisiniHesapla() {
 
 document.addEventListener('DOMContentLoaded', gunSayisiniHesapla);
 
-// -------------------------------------------------------------------
-// 2. Giriş Mantığı
-// -------------------------------------------------------------------
+// GÜVENLİ GİRİŞ FONKSİYONU (Sadece Kullanıcı Adı Kontrolü)
 function loginUser(userNumber) {
     const nameInput = document.getElementById(`user${userNumber}Name`).value;
-    const passInput = document.getElementById(`user${userNumber}Pass`).value;
     
-    // Şifreler sadece ön yüz simülasyonudur.
     const user1_AD = "esra";
-    const user1_SIFRE = "2502"; 
-    const user2_AD = "ali";
-    const user2_SIFRE = "0402"; 
+    const user2_AD = "ali"; 
 
     let success = false;
     let username = "";
 
-    if (userNumber === 1 && nameInput === user1_AD && passInput === user1_SIFRE) {
+    if (userNumber === 1 && nameInput === user1_AD) {
         success = true;
         username = user1_AD;
-    } else if (userNumber === 2 && nameInput === user2_AD && passInput === user2_SIFRE) {
+    } else if (userNumber === 2 && nameInput === user2_AD) {
         success = true;
         username = user2_AD;
     }
@@ -41,15 +58,15 @@ function loginUser(userNumber) {
         alert(`${username} hoş geldin! Günlüğe giriş yapılıyor...`);
         loadCalendarPage(username); 
     } else {
-        alert("Kullanıcı adı veya şifre hatalı. Lütfen tekrar dene.");
+        alert("Kullanıcı adı yanlış. Lütfen kullanıcı adını kontrol et.");
     }
 }
 
+// -------------------------------------------------------------------
+// 3. TAKVİM VE VERİ ÇEKME (BULUTTAN)
+// -------------------------------------------------------------------
 
-// -------------------------------------------------------------------
-// 3. Takvim Ayarları, Renkler ve Özel Günler
-// -------------------------------------------------------------------
-const takvimBaslangicYili = 2025; // Takvimin gösterime başlayacağı yıl (Ocak 1'den)
+const takvimBaslangicYili = 2025; 
 
 const ayRenkleri = {
     0: '#f8bbd0', 1: '#e1bee7', 2: '#c5cae9', 3: '#b2ebf2',
@@ -57,13 +74,7 @@ const ayRenkleri = {
     8: '#d7ccc8', 9: '#cfd8dc', 10: '#bcaaa4', 11: '#90caf9' 
 };
 
-// AY DEĞERLERİ 0'DAN BAŞLAR (0=Ocak, 1=Şubat, 5=Haziran, 11=Aralık)
-const ozelGunler = [
-   { ay: 1, gun: 14, ad: "Sevgililer Günü" }, // 14 Şubat
-    { ay: 1, gun: 4, ad: "Senin Doğum Günün" }, // )
-    { ay: 1, gun: 25, ad: "O'nun Doğum Günü" }, // 
-    { ay: 5, gun: 16, ad: "Yıldönümümüz" } // 16 Haziran
-];
+const ozelGunler = [ { ay: 1, gun: 14, ad: "Sevgililer Günü" }, { ay: 4, gun: 25, ad: "Senin Doğum Günün" }, { ay: 7, gun: 12, ad: "O'nun Doğum Günü" }, { ay: 5, gun: 16, ad: "Yıldönümümüz" } ];
 
 function isOzelGun(tarih) {
     const ay = tarih.getMonth();
@@ -71,22 +82,19 @@ function isOzelGun(tarih) {
     return ozelGunler.some(ozel => ozel.ay === ay && ozel.gun === gun); 
 }
 
-// -------------------------------------------------------------------
-// Global Durum Yönetimi
-// -------------------------------------------------------------------
 let currentDayTarih = null;
 let currentLoggedInUser = null; 
 
-// -------------------------------------------------------------------
-// 4. Takvim Sayfasını Yükleme
-// -------------------------------------------------------------------
-function loadCalendarPage(user) {
+async function loadCalendarPage(user) {
     const body = document.body;
-    currentLoggedInUser = user; // Giriş yapan kullanıcıyı kaydet
+    currentLoggedInUser = user; 
     
-    // Yalnızca içeriği temizle
     body.innerHTML = ''; 
     
+    // BULUTTAN TÜM ANILARI ÇEKME
+    const tumAnilarSnapshot = await getDoc(doc(db, "meta", "anilar_tumu"));
+    const tumAnilar = tumAnilarSnapshot.exists() ? tumAnilarSnapshot.data() : {};
+
     const header = document.createElement('h1');
     header.className = 'main-title';
     header.textContent = `🗓️ ${user}'ın Yılı: Anılarımız 🗓️`;
@@ -98,52 +106,31 @@ function loadCalendarPage(user) {
     for (let i = 0; i < 365; i++) {
         const dayBox = document.createElement('div');
         dayBox.className = 'day-box';
-        
         const tarih = new Date(takvimBaslangicYili, 0, i + 1); 
+        const tarihKey = tarih.toDateString(); 
+        
         const ayIndex = tarih.getMonth(); 
         dayBox.style.backgroundColor = ayRenkleri[ayIndex]; 
+        const tarihFormat = tarih.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
         
-        const tarihFormat = tarih.toLocaleDateString('tr-TR', { 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric' 
-        });
-
-        const tarihKeyEsra = `${tarih.toDateString()}-esra`;
-        const tarihKeyAli = `${tarih.toDateString()}-ali`;
+        const anilar = tumAnilar[tarihKey] || {};
         let photoIndicator = ''; 
 
-        // 1. ÖZEL GÜN VURGUSU
         if (isOzelGun(tarih)) {
              dayBox.classList.add('ozel-gun');
         }
         
-        // 2. KAYDEDİLMİŞ ANI VE FOTOĞRAF KONTROLÜ (Çift Kontrol)
-        const storedMemoryEsra = localStorage.getItem(tarihKeyEsra);
-        const storedMemoryAli = localStorage.getItem(tarihKeyAli);
-
-        // İki kişiden biri not bıraktıysa kutucuğu dolu yap
-        if (storedMemoryEsra || storedMemoryAli) {
+        // Eğer Ali veya Esra not bıraktıysa kutuyu dolu yap
+        if (anilar.esra || anilar.ali) { 
             dayBox.classList.add('filled-day'); 
-
-            // Fotoğraf kontrolü: Kimin bıraktığı önemli değil, fotoğraf var mı?
-            const memoryDataEsra = storedMemoryEsra ? JSON.parse(storedMemoryEsra) : {photo: ''};
-            const memoryDataAli = storedMemoryAli ? JSON.parse(storedMemoryAli) : {photo: ''};
             
-            if ((memoryDataEsra.photo && memoryDataEsra.photo !== '') || 
-                (memoryDataAli.photo && memoryDataAli.photo !== '')) {
+            if ((anilar.esra && anilar.esra.photo) || (anilar.ali && anilar.ali.photo)) {
                 photoIndicator = '📸'; 
             }
         }
         
-        dayBox.innerHTML = `
-            <span class="day-number">${tarih.getDate()}</span> 
-            <span class="photo-icon">${photoIndicator}</span> 
-            <span class="full-date">${tarihFormat}</span>
-        `;
-        
+        dayBox.innerHTML = `<span class="day-number">${tarih.getDate()}</span> <span class="photo-icon">${photoIndicator}</span> <span class="full-date">${tarihFormat}</span>`;
         dayBox.onclick = () => openModal(tarih);
-        
         grid.appendChild(dayBox);
     }
     
@@ -156,10 +143,8 @@ function loadCalendarPage(user) {
                 <span class="close-button" onclick="closeModal()">&times;</span>
                 <h3 id="modalDate"></h3>
                 <textarea id="memoryText" placeholder="Bugünün anısını buraya yaz..."></textarea>
-                <label for="memoryPhoto" class="photo-label">
-                    📸 Fotoğraf Ekle (Yükleme simülasyonu)
-                    <input type="file" id="memoryPhoto" accept="image/*">
-                </label>
+                <label for="memoryPhoto" class="photo-label">📸 Fotoğraf Ekle (Yükleme simülasyonu)
+                    <input type="file" id="memoryPhoto" accept="image/*"></label>
                 <button onclick="saveMemory()">Anıyı Kaydet</button>
             </div>
         </div>`;
@@ -168,21 +153,17 @@ function loadCalendarPage(user) {
 }
 
 // -------------------------------------------------------------------
-// 5. Modal Fonksiyonları (ÇİFT KULLANICI DESTEĞİ)
+// 4. MODAL VE VERİ KAYDETME/OKUMA (BULUTA BAĞLI)
 // -------------------------------------------------------------------
 
 function openModal(tarih) {
     currentDayTarih = tarih;
-    
     const tarihFormat = tarih.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
-    
-    // Modal başlığını giriş yapan kullanıcıya göre kişiselleştir
     document.getElementById('modalDate').textContent = `${tarihFormat} Anısı (${currentLoggedInUser.toUpperCase()})`; 
     
     document.getElementById('memoryText').value = '';
     document.getElementById('memoryPhoto').value = ''; 
     loadMemory(); 
-    
     document.getElementById('memoryModal').style.display = 'block';
 }
 
@@ -191,66 +172,70 @@ function closeModal() {
     currentDayTarih = null;
 }
 
-function saveMemory() {
+// BULUTA KAYDETME (Ortak Okuma)
+async function saveMemory() {
     if (!currentDayTarih || !currentLoggedInUser) return;
 
-    // Anahtar artık kullanıcı adını da içeriyor: "Tarih-KullanıcıAdı"
-    const tarihKey = `${currentDayTarih.toDateString()}-${currentLoggedInUser}`; 
-    
+    const tarihKey = currentDayTarih.toDateString(); 
     const memoryText = document.getElementById('memoryText').value;
     const photoFile = document.getElementById('memoryPhoto').files[0];
     let photoName = photoFile ? photoFile.name : '';
     
     const memoryData = {
-        user: currentLoggedInUser, // Kimin yazdığını kaydet
+        user: currentLoggedInUser, 
         text: memoryText,
-        photo: photoName
+        photo: photoName,
+        timestamp: new Date().getTime()
     };
+    
+    try {
+        const updateObject = {};
+        updateObject[`${tarihKey}.${currentLoggedInUser}`] = memoryData;
 
-    localStorage.setItem(tarihKey, JSON.stringify(memoryData));
+        // Firebase'e kaydet
+        await setDoc(doc(db, "meta", "anilar_tumu"), updateObject, { merge: true });
+        
+        alert(`Anınız (${currentLoggedInUser}) buluta başarıyla kaydedildi!`);
+        loadCalendarPage(currentLoggedInUser); 
+    } catch (e) {
+        console.error("Buluta Kaydetme Hatası: ", e);
+        alert("HATA: Anı buluta kaydedilemedi. Konsolu kontrol edin.");
+    }
     
-    alert(`Anınız (${currentLoggedInUser}) başarıyla kaydedildi!`);
-    
-    // Takvimi yeniden yükle
-    loadCalendarPage(currentLoggedInUser); 
     closeModal();
 }
 
-function loadMemory() {
-    // Tanımlı kullanıcı adları
-    const user1 = "esra"; 
-    const user2 = "ali";
+// BULUTTAN OKUMA (Ortak Okuma)
+async function loadMemory() {
+    const tarihKey = currentDayTarih.toDateString();
+    const otherUser = (currentLoggedInUser === "esra") ? "ali" : "esra";
+
+    // Tüm anıları buluttan çek
+    const tumAnilarSnapshot = await getDoc(doc(db, "meta", "anilar_tumu"));
+    const tumAnilar = tumAnilarSnapshot.exists() ? tumAnilarSnapshot.data() : {};
     
-    // Hangi veriyi yükleyeceğimizi belirle
-    const currentUserKey = `${currentDayTarih.toDateString()}-${currentLoggedInUser}`;
-    const otherUser = (currentLoggedInUser === user1) ? user2 : user1;
-    const otherUserKey = `${currentDayTarih.toDateString()}-${otherUser}`;
-    
-    
-    // 1. Kendi Anısını Yükle
-    const storedData = localStorage.getItem(currentUserKey);
+    const anilar = tumAnilar[tarihKey] || {};
+
     let photoInfo = '';
     let memoryStatus = '(Yeni Anı)';
 
-    if (storedData) {
-        const memoryData = JSON.parse(storedData);
-        document.getElementById('memoryText').value = memoryData.text;
+    // Kendi Anısını Yükle
+    if (anilar[currentLoggedInUser]) {
+        const myData = anilar[currentLoggedInUser];
+        document.getElementById('memoryText').value = myData.text;
         
-        photoInfo = memoryData.photo ? ` 📸` : '';
+        photoInfo = myData.photo ? ` 📸` : '';
         memoryStatus = `(Kendi Anınız Kayıtlı${photoInfo})`;
     } else {
         document.getElementById('memoryText').value = '';
     }
     
-    // 2. Diğer Sevgilinin Anısını Kontrol Et ve Başlığa Ekle
-    const otherStoredData = localStorage.getItem(otherUserKey);
-    if (otherStoredData) {
-        const otherData = JSON.parse(otherStoredData);
+    // Diğer Sevgilinin Anısını Kontrol Et
+    if (anilar[otherUser]) {
+        const otherData = anilar[otherUser];
         const otherPhotoInfo = otherData.photo ? ` 📸` : '';
         memoryStatus += ` | ${otherUser.toUpperCase()} Anısı Var${otherPhotoInfo}`;
     }
 
-    // Modal Başlığını Güncelle
-    document.getElementById('modalDate').textContent = 
-        document.getElementById('modalDate').textContent.split('(')[0].trim() + ' ' + memoryStatus;
+    document.getElementById('modalDate').textContent = document.getElementById('modalDate').textContent.split('(')[0].trim() + ' ' + memoryStatus;
 }
