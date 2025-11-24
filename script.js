@@ -1,10 +1,10 @@
 // ===================================================================
-// 1. FIREBASE ALTYAPISI (LÜTFEN BU BÖLÜMÜ GERÇEK ANAHTARLARINIZLA DOLDURUN)
+// 1. FIREBASE ALTYAPISI (GITHUB PAGES İLE UYUMLU VE SON HALİ)
 // ===================================================================
 
+// ÖNEMLİ: Kendi Firebase Konsolunuzdan aldığınız GERÇEK anahtarları buraya yapıştırın!
 const firebaseConfig = {
-  // BURAYA FIREBASE KONSOLUNDAN ALDIĞINIZ GERÇEK KOD BLOĞUNU YAPIŞTIRIN!
-  // Örn: apiKey: "AIzaSy_SİZİN_GERÇEK_ANAHTARINIZ_BURADA",
+  // Lütfen bu alanı Firebase'den kopyaladığınız GERÇEK anahtarlarınızla doldurun.
   apiKey: "YOUR_API_KEY", 
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com", 
   projectId: "YOUR_PROJECT_ID", 
@@ -13,13 +13,15 @@ const firebaseConfig = {
   appId: "1:1234567890:web:abcdefg123456789" 
 };
 
-// Bu kısımlar Firebase'e bağlanır.
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// KRİTİK DÜZELTME: Global 'firebase' objesi üzerinden başlatma (CDN ile uyumlu)
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 const ANILAR_KOLEKSIYON = "ortak_anilar";
+
+// Firestore fonksiyonlarını global değişkenlere atama
+const doc = firebase.firestore.doc;
+const setDoc = firebase.firestore.setDoc;
+const getDoc = firebase.firestore.getDoc;
 
 // -------------------------------------------------------------------
 // 2. Aşk Gün Sayacı ve Giriş Mantığı
