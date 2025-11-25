@@ -5,6 +5,7 @@
 // ÖNEMLİ: Kendi Firebase Konsolunuzdan aldığınız GERÇEK anahtarları buraya yapıştırın!
 const firebaseConfig = {
   // Lütfen bu alanı Firebase'den kopyaladığınız GERÇEK anahtarlarınızla doldurun.
+  // ÇİFT TIRNAKLARI (") SİLMEYİN!
   apiKey: "YOUR_API_KEY", 
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com", 
   projectId: "YOUR_PROJECT_ID", 
@@ -26,7 +27,7 @@ const getDoc = firebase.firestore.getDoc;
 // -------------------------------------------------------------------
 // 2. Aşk Gün Sayacı ve Giriş Mantığı
 // -------------------------------------------------------------------
-const baslangicTarihi = new Date(2021, 5, 16); 
+const baslangicTarihi = new Date(2022, 5, 16); 
 const bugununTarihi = new Date();
 
 function gunSayisiniHesapla() {
