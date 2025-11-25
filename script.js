@@ -88,4 +88,157 @@ function isOzelGun(tarih) {
 let currentDayTarih = null;
 let currentLoggedInUser = null; 
 
-async function loadCalendar
+async function loadCalendarPage(user) {
+    const body = document.body;
+    currentLoggedInUser = user; 
+    
+    body.innerHTML = ''; 
+    
+    // BULUTTAN TÜM ANILARI ÇEKME
+    const tumAnilarSnapshot = await getDoc(doc(db, "meta", "anilar_tumu"));
+    const tumAnilar = tumAnilarSnapshot.exists() ? tumAnilarSnapshot.data() : {};
+
+    const header = document.createElement('h1');
+    header.className = 'main-title';
+    header.textContent = `🗓️ ${user}'ın Yılı: Anılarımız 🗓️`;
+    body.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'calendar-grid';
+
+    for (let i = 0; i < 365; i++) {
+        const dayBox = document.createElement('div');
+        dayBox.className = 'day-box';
+        const tarih = new Date(takvimBaslangicYili, 0, i + 1); 
+        const tarihKey = tarih.toDateString(); 
+        
+        const ayIndex = tarih.getMonth(); 
+        dayBox.style.backgroundColor = ayRenkleri[ayIndex]; 
+        const tarihFormat = tarih.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        const anilar = tumAnilar[tarihKey] || {};
+        let photoIndicator = ''; 
+
+        if (isOzelGun(tarih)) {
+             dayBox.classList.add('ozel-gun');
+        }
+        
+        // Eğer Ali veya Esra not bıraktıysa kutuyu dolu yap
+        if (anilar.esra || anilar.ali) { 
+            dayBox.classList.add('filled-day'); 
+            
+            if ((anilar.esra && anilar.esra.photo) || (anilar.ali && anilar.ali.photo)) {
+                photoIndicator = '📸'; 
+            }
+        }
+        
+        dayBox.innerHTML = `<span class="day-number">${tarih.getDate()}</span> <span class="photo-icon">${photoIndicator}</span> <span class="full-date">${tarihFormat}</span>`;
+        dayBox.onclick = () => openModal(tarih);
+        grid.appendChild(dayBox);
+    }
+    
+    body.appendChild(grid);
+    
+    // Modal HTML'ini tekrar ekle
+    const modalHtml = `
+        <div id="memoryModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeModal()">&times;</span>
+                <h3 id="modalDate"></h3>
+                <textarea id="memoryText" placeholder="Bugünün anısını buraya yaz..."></textarea>
+                <label for="memoryPhoto" class="photo-label">📸 Fotoğraf Ekle (Yükleme simülasyonu)
+                    <input type="file" id="memoryPhoto" accept="image/*"></label>
+                <button onclick="saveMemory()">Anıyı Kaydet</button>
+            </div>
+        </div>`;
+    
+    body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// -------------------------------------------------------------------
+// 4. MODAL VE VERİ KAYDETME/OKUMA (BULUTA BAĞLI)
+// -------------------------------------------------------------------
+
+function openModal(tarih) {
+    currentDayTarih = tarih;
+    const tarihFormat = tarih.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('modalDate').textContent = `${tarihFormat} Anısı (${currentLoggedInUser.toUpperCase()})`; 
+    
+    document.getElementById('memoryText').value = '';
+    document.getElementById('memoryPhoto').value = ''; 
+    loadMemory(); 
+    document.getElementById('memoryModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('memoryModal').style.display = 'none';
+    currentDayTarih = null;
+}
+
+// BULUTA KAYDETME (Ortak Okuma)
+async function saveMemory() {
+    if (!currentDayTarih || !currentLoggedInUser) return;
+
+    const tarihKey = currentDayTarih.toDateString(); 
+    const memoryText = document.getElementById('memoryText').value;
+    const photoFile = document.getElementById('memoryPhoto').files[0];
+    let photoName = photoFile ? photoFile.name : '';
+    
+    const memoryData = {
+        user: currentLoggedInUser, 
+        text: memoryText,
+        photo: photoName,
+        timestamp: new Date().getTime()
+    };
+    
+    try {
+        const updateObject = {};
+        updateObject[`${tarihKey}.${currentLoggedInUser}`] = memoryData;
+
+        // Firebase'e kaydet
+        await setDoc(doc(db, "meta", "anilar_tumu"), updateObject, { merge: true });
+        
+        alert(`Anınız (${currentLoggedInUser}) buluta başarıyla kaydedildi!`);
+        loadCalendarPage(currentLoggedInUser); 
+    } catch (e) {
+        console.error("Buluta Kaydetme Hatası: ", e);
+        alert("HATA: Anı buluta kaydedilemedi. Konsolu kontrol edin.");
+    }
+    
+    closeModal();
+}
+
+// BULUTTAN OKUMA (Ortak Okuma)
+async function loadMemory() {
+    const tarihKey = currentDayTarih.toDateString();
+    const otherUser = (currentLoggedInUser === "esra") ? "ali" : "esra";
+
+    // Tüm anıları buluttan çek
+    const tumAnilarSnapshot = await getDoc(doc(db, "meta", "anilar_tumu"));
+    const tumAnilar = tumAnilarSnapshot.exists() ? tumAnilarSnapshot.data() : {};
+    
+    const anilar = tumAnilar[tarihKey] || {};
+
+    let photoInfo = '';
+    let memoryStatus = '(Yeni Anı)';
+
+    // Kendi Anısını Yükle
+    if (anilar[currentLoggedInUser]) {
+        const myData = anilar[currentLoggedInUser];
+        document.getElementById('memoryText').value = myData.text;
+        
+        photoInfo = myData.photo ? ` 📸` : '';
+        memoryStatus = `(Kendi Anınız Kayıtlı${photoInfo})`;
+    } else {
+        document.getElementById('memoryText').value = '';
+    }
+    
+    // Diğer Sevgilinin Anısını Kontrol Et
+    if (anilar[otherUser]) {
+        const otherData = anilar[otherUser];
+        const otherPhotoInfo = otherData.photo ? ` 📸` : '';
+        memoryStatus += ` | ${otherUser.toUpperCase()} Anısı Var${otherPhotoInfo}`;
+    }
+
+    document.getElementById('modalDate').textContent = document.getElementById('modalDate').textContent.split('(')[0].trim() + ' ' + memoryStatus;
+}
